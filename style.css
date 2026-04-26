@@ -1,0 +1,243 @@
+/* =========================
+   FONT & OVERLAY
+========================= */
+.font-sans { font-family: 'Inter', sans-serif; }
+.font-serif, h1, h2, h3 { font-family: 'Playfair Display', serif; }
+
+#view-artist .font-sans, 
+#view-product .font-sans,
+.product-card .font-sans { 
+    font-family: 'Outfit', sans-serif; 
+}
+
+#view-artist .font-serif, #view-artist h1, #view-artist h2, #view-artist h3,
+#view-product .font-serif, #view-product h1, #view-product h2, #view-product h3 { 
+    font-family: 'Cormorant Garamond', serif; 
+}
+
+.smart-return-btn .font-serif {
+    font-family: 'Playfair Display', serif !important;
+}
+
+.vignette-overlay-home {
+    background: radial-gradient(circle at 50% 50%, transparent 10%, rgba(0,0,0,0.9) 100%);
+}
+
+.vignette-overlay-product {
+    background:
+        radial-gradient(circle at 30% 50%, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.95) 100%),
+        linear-gradient(to right, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.2) 40%, rgba(0,0,0,0.85) 100%);
+}
+
+.hidden-view {
+    visibility: hidden;
+    pointer-events: none;
+}
+
+body.no-cursor { cursor: none; }
+body.menu-open { overflow: hidden; }
+
+#custom-cursor {
+    transition: transform 0.08s ease-out;
+    z-index: 999;
+    pointer-events: none;
+}
+
+.global-footer {
+    will-change: opacity, transform;
+}
+
+/* =========================
+   SMART RETURN BUTTON (GLOBAL)
+========================= */
+.smart-return-btn {
+    border-radius: 9999px;
+    padding: 0.6rem 1.2rem;
+    background-color: rgba(255, 255, 255, 0);
+    border: 1px solid rgba(255, 255, 255, 0);
+    /* Tuyệt đối KHÔNG để transform ở đây để GSAP xử lý mượt */
+    transition: background-color 0.4s ease, 
+                border-color 0.4s ease, 
+                box-shadow 0.4s ease, 
+                backdrop-filter 0.4s ease;
+    will-change: transform, opacity;
+}
+
+.smart-return-btn.glass-pill {
+    background-color: rgba(20, 20, 20, 0.75) !important;
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.smart-return-btn:hover {
+    background-color: rgba(40, 40, 40, 0.6);
+}
+
+.smart-return-btn.glass-pill:hover {
+    border-color: rgba(255, 255, 255, 0.25);
+    background-color: rgba(40, 40, 40, 0.9) !important;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
+}
+
+.smart-return-btn:hover .btn-line {
+    background-color: #fff;
+    box-shadow: 0 0 12px rgba(255, 255, 255, 1);
+    width: 3rem; 
+}
+
+/* =========================
+   PRODUCT CARD & VINYL
+========================= */
+.hide-scrollbar::-webkit-scrollbar { display: none; }
+.hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+.product-card {
+    position: relative;
+    z-index: 10;
+    will-change: transform;
+    transform: translateZ(0);
+}
+
+.product-card:hover { z-index: 50; }
+
+.product-card .album-cover {
+    position: relative;
+    z-index: 20;
+}
+
+.vinyl-record {
+    position: absolute;
+    z-index: 0;
+    top: 2%; 
+    left: 2%;
+    width: 96%;
+    height: 96%;
+    border-radius: 50%;
+    transform-origin: center;
+    transform: translateX(10%) rotate(0deg) scale(0.9);
+    transition: transform 0.65s cubic-bezier(0.16, 1, 0.3, 1);
+    will-change: transform;
+    pointer-events: none; 
+}
+
+.product-card:hover .vinyl-record {
+    transform: translateX(48%) rotate(180deg) scale(0.95);
+}
+
+/* =========================
+   ĐĨA THAN TRONG TRANG DETAIL
+========================= */
+.vinyl-record-detail {
+    position: absolute;
+    z-index: 0 !important;
+    transform: translateX(40%);
+    animation: spin-detail 6s linear infinite;
+    animation-play-state: paused;
+}
+
+@keyframes spin-detail {
+    0% { transform: translateX(40%) rotate(0deg); }
+    100% { transform: translateX(40%) rotate(360deg); }
+}
+
+.vinyl-record-detail.is-playing {
+    animation-play-state: running;
+}
+
+@keyframes pop-icon {
+    0% { transform: scale(0.5) rotate(-30deg); opacity: 0; }
+    100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+.animate-pop {
+    animation: pop-icon 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+/* =========================
+   3D THUMB CAROUSEL
+========================= */
+.perspective-1000 { perspective: 1000px; transform-style: preserve-3d; }
+
+.thumb-card {
+    position: absolute; width: 80px; height: 80px; border-radius: 6px; overflow: hidden;
+    top: 50%; left: 50%; margin-top: -40px; margin-left: -40px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: all 0.45s cubic-bezier(0.25, 1, 0.5, 1); cursor: pointer;
+    will-change: transform, opacity; backface-visibility: hidden;
+}
+
+.thumb-active {
+    z-index: 3; transform: scale(1.1) translateZ(20px); opacity: 1;
+    border-color: rgba(255, 255, 255, 0.9); box-shadow: 0 10px 25px rgba(0,0,0,0.7); filter: blur(0px);
+}
+
+.thumb-prev {
+    z-index: 2; transform: translateX(-55px) scale(0.85) translateZ(-20px) rotateY(18deg); opacity: 0.4; filter: blur(1px);
+}
+
+.thumb-next {
+    z-index: 2; transform: translateX(55px) scale(0.85) translateZ(-20px) rotateY(-18deg); opacity: 0.4; filter: blur(1px);
+}
+
+.thumb-hidden {
+    z-index: 1; transform: scale(0.5) translateZ(-60px); opacity: 0; pointer-events: none;
+}
+
+/* =========================
+   SCROLLBAR DỌC
+========================= */
+.custom-scrollbar::-webkit-scrollbar { width: 8px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 10px; }
+.custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.4); }
+
+/* =========================
+   MINI EQUALIZER (SÓNG NHẠC)
+========================= */
+.equalizer {
+    height: 14px;
+    gap: 2.5px;
+}
+.equalizer-bar {
+    width: 3px;
+    background-color: #fff;
+    border-radius: 2px;
+    animation: bounce-eq 0.8s infinite alternate ease-in-out;
+}
+.equalizer-bar:nth-child(1) { animation-delay: 0.1s; height: 60%; }
+.equalizer-bar:nth-child(2) { animation-delay: 0.4s; height: 100%; }
+.equalizer-bar:nth-child(3) { animation-delay: 0.2s; height: 40%; }
+
+@keyframes bounce-eq {
+    0% { height: 20%; opacity: 0.5; }
+    100% { height: 100%; opacity: 1; }
+}
+
+/* =========================
+   LYRICS VIEW
+========================= */
+.lyric-line {
+    transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+    line-height: 1.5;
+}
+.lyric-line.active {
+    color: rgba(255, 255, 255, 1);
+    text-shadow: 0 0 15px rgba(255, 255, 255, 0.4);
+    transform: scale(1.02);
+    transform-origin: left center;
+}
+
+.scroll-row {
+    -webkit-mask-image: linear-gradient(to right, black 0%, black 90%, transparent 100%);
+    mask-image: linear-gradient(to right, black 0%, black 90%, transparent 100%);
+}
+
+.btn-scroll-left, .btn-scroll-right {
+    z-index: 70;
+}
+/* HIỆU ỨNG CHỮ KHỔNG LỒ CHÌM DƯỚI BACKGROUND */
+.stroke-text {
+    -webkit-text-stroke: 1px rgba(255, 255, 255, 0.05);
+    color: transparent;
+    user-select: none;
+}
