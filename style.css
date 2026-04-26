@@ -1,6 +1,13 @@
 /* =========================
    FONT & OVERLAY
 ========================= */
+/* Tạo độ "phiêu" cho phần chữ nghiêng */
+.font-serif span.italic {
+    font-family: 'Playfair Display', serif;
+    font-weight: 400;
+    font-style: italic;
+
+}
 .font-sans { font-family: 'Inter', sans-serif; }
 .font-serif, h1, h2, h3 { font-family: 'Playfair Display', serif; }
 
@@ -234,10 +241,4 @@ body.menu-open { overflow: hidden; }
 
 .btn-scroll-left, .btn-scroll-right {
     z-index: 70;
-}
-/* HIỆU ỨNG CHỮ KHỔNG LỒ CHÌM DƯỚI BACKGROUND */
-.stroke-text {
-    -webkit-text-stroke: 1px rgba(255, 255, 255, 0.05);
-    color: transparent;
-    user-select: none;
 }

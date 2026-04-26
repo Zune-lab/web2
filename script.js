@@ -17,18 +17,9 @@ document.addEventListener("DOMContentLoaded", () => {
     // 1. BƠM MV LÊN LÀM MAIN PLAYER (HÌNH + TIẾNG)
     // =========================================================================
     const productBgContainer = document.querySelector("#view-product .bg-black");
-    let bgVideo1, bgVideo2;
-    if (productBgContainer && !document.getElementById("bg-video-1")) {
-        // Bỏ 'muted', bỏ 'loop', bỏ CSS transition để GSAP thao túng 100% âm thanh và hình ảnh
-        productBgContainer.innerHTML = `
-            <img id="bg-image" src="" class="absolute inset-0 w-full h-full object-cover object-center scale-110 filter blur-[30px] opacity-20 transition-opacity duration-1000 z-0">
-            <video id="bg-video-1" class="absolute inset-0 w-full h-full object-cover object-center scale-110 opacity-0 z-10" playsinline></video>
-            <video id="bg-video-2" class="absolute inset-0 w-full h-full object-cover object-center scale-110 opacity-0 z-10" playsinline></video>
-            <div class="absolute inset-0 bg-gradient-to-t from-[#050505] via-[#050505]/80 to-[#050505]/40 z-20"></div>
-        `;
-    }
-    bgVideo1 = document.getElementById("bg-video-1");
-    bgVideo2 = document.getElementById("bg-video-2");
+    // Chỉ cần lấy element trực tiếp từ DOM vì HTML đã có sẵn
+    let bgVideo1 = document.getElementById("bg-video-1");
+    let bgVideo2 = document.getElementById("bg-video-2");
     let activeVideoLayer = 1;
     let animationFrameId = null;
     window.isTransitioning = false;
@@ -114,35 +105,39 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    initScrubbing("volume-container", (percent) => {
-        window.globalVolume = percent; window.isMuted = percent === 0;
-        const player = getMainPlayer(); if (player) player.volume = percent;
+    // HÀM XỬ LÝ ÂM LƯỢNG DÙNG CHUNG CỰC GỌN
+    const handleVolumeChange = (percent) => {
+        window.globalVolume = percent; 
+        window.isMuted = percent === 0;
         
-        if (document.getElementById("volume-bar")) document.getElementById("volume-bar").style.width = `${percent * 100}%`;
-        if (document.getElementById("mini-volume-bar")) document.getElementById("mini-volume-bar").style.width = `${percent * 100}%`;
-        const volPercentText = document.getElementById("volume-percent");
-        if (volPercentText) volPercentText.innerText = `${Math.round(percent * 100)}%`;
+        const player = getMainPlayer(); 
+        if (player) player.volume = percent;
+        
+        // Cập nhật UI thanh gạt
+        const volBar = document.getElementById("volume-bar");
+        const miniVolBar = document.getElementById("mini-volume-bar");
+        if (volBar) volBar.style.width = `${percent * 100}%`;
+        if (miniVolBar) miniVolBar.style.width = `${percent * 100}%`;
 
+        // Cập nhật text %
+        const volPercentText = document.getElementById("volume-percent");
+        const miniVolPercentText = document.getElementById("mini-volume-percent");
+        if (volPercentText) volPercentText.innerText = `${Math.round(percent * 100)}%`;
+        if (miniVolPercentText) miniVolPercentText.innerText = `${Math.round(percent * 100)}%`;
+
+        // Cập nhật Icon
         const iconClass = percent === 0 ? "ph-fill ph-speaker-slash text-lg" : "ph-fill ph-speaker-high text-lg";
         const miniIconClass = percent === 0 ? "ph-fill ph-speaker-slash text-white/40 hover:text-white transition-colors text-sm" : "ph-fill ph-speaker-high text-white/40 hover:text-white transition-colors text-sm";
-        if (document.getElementById("volume-icon")) document.getElementById("volume-icon").className = iconClass;
-        if (document.getElementById("mini-volume-icon")) document.getElementById("mini-volume-icon").className = miniIconClass;
-    });
-
-    initScrubbing("mini-volume-container", (percent) => {
-        window.globalVolume = percent; window.isMuted = percent === 0;
-        const player = getMainPlayer(); if (player) player.volume = percent;
         
-        if (document.getElementById("volume-bar")) document.getElementById("volume-bar").style.width = `${percent * 100}%`;
-        if (document.getElementById("mini-volume-bar")) document.getElementById("mini-volume-bar").style.width = `${percent * 100}%`;
-        const volPercentText = document.getElementById("volume-percent");
-        if (volPercentText) volPercentText.innerText = `${Math.round(percent * 100)}%`;
+        const volIcon = document.getElementById("volume-icon");
+        const miniVolIcon = document.getElementById("mini-volume-icon");
+        if (volIcon) volIcon.className = iconClass;
+        if (miniVolIcon) miniVolIcon.className = miniIconClass;
+    };
 
-        const iconClass = percent === 0 ? "ph-fill ph-speaker-slash text-lg" : "ph-fill ph-speaker-high text-lg";
-        const miniIconClass = percent === 0 ? "ph-fill ph-speaker-slash text-white/40 hover:text-white transition-colors text-sm" : "ph-fill ph-speaker-high text-white/40 hover:text-white transition-colors text-sm";
-        if (document.getElementById("volume-icon")) document.getElementById("volume-icon").className = iconClass;
-        if (document.getElementById("mini-volume-icon")) document.getElementById("mini-volume-icon").className = miniIconClass;
-    });
+    // Gọi hàm chung cho cả 2 chỗ
+    initScrubbing("volume-container", handleVolumeChange);
+    initScrubbing("mini-volume-container", handleVolumeChange);
 
     // Bắt sự kiện Click vào thân MiniPlayer để mở đĩa than
     document.getElementById("mini-player-body")?.addEventListener("click", () => {
@@ -159,37 +154,45 @@ document.addEventListener("DOMContentLoaded", () => {
         "Chỉ còn ta với âm nhạc thăng hoa."
     ];
 
-    function generateVinylImage() {
-        const canvas = document.createElement("canvas");
-        canvas.width = 1024; canvas.height = 1024;
-        const ctx = canvas.getContext("2d");
-        const cx = 512; const cy = 512;
+    // Thêm biến cache ra ngoài
+let cachedVinylBase64 = null;
 
-        ctx.fillStyle = "#080808"; ctx.beginPath(); ctx.arc(cx, cy, 500, 0, Math.PI * 2); ctx.fill();
-        ctx.lineWidth = 1;
-        for (let radius = 170; radius < 490; radius += 2.5) {
-            ctx.beginPath(); ctx.arc(cx, cy, radius, 0, Math.PI * 2);
-            ctx.strokeStyle = `rgba(255,255,255,${Math.random() * 0.05})`; ctx.stroke();
-        }
+function generateVinylImage() {
+    // Nếu đã vẽ rồi thì trả về luôn, khỏi vẽ lại
+    if (cachedVinylBase64) return cachedVinylBase64;
 
-        if (ctx.createConicGradient) {
-            const gradient = ctx.createConicGradient(Math.PI / 4, cx, cy);
-            gradient.addColorStop(0, "rgba(255,255,255,0)"); gradient.addColorStop(0.1, "rgba(255,255,255,0.1)");
-            gradient.addColorStop(0.2, "rgba(255,255,255,0)"); gradient.addColorStop(0.5, "rgba(255,255,255,0)");
-            gradient.addColorStop(0.6, "rgba(255,255,255,0.1)"); gradient.addColorStop(0.7, "rgba(255,255,255,0)");
-            gradient.addColorStop(1, "rgba(255,255,255,0)");
-            ctx.fillStyle = gradient; ctx.beginPath(); ctx.arc(cx, cy, 500, 0, Math.PI * 2); ctx.fill();
-        }
+    const canvas = document.createElement("canvas");
+    canvas.width = 1024; canvas.height = 1024;
+    const ctx = canvas.getContext("2d");
+    const cx = 512; const cy = 512;
 
-        ctx.fillStyle = "#c4281c"; ctx.beginPath(); ctx.arc(cx, cy, 160, 0, Math.PI * 2); ctx.fill();
-        ctx.strokeStyle = "#e8b923"; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(cx, cy, 150, 0, Math.PI * 2); ctx.stroke();
-        ctx.fillStyle = "#e8b923"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.font = 'bold 36px "Playfair Display", serif';
-        ctx.fillText("SYMPHONY", cx, cy - 40);
-        ctx.fillStyle = "#ffffff"; ctx.font = 'bold 16px "Inter", sans-serif'; ctx.fillText("STEREO", cx, cy + 40);
-        ctx.fillStyle = "#050505"; ctx.beginPath(); ctx.arc(cx, cy, 12, 0, Math.PI * 2); ctx.fill();
-
-        return canvas.toDataURL("image/png");
+    ctx.fillStyle = "#080808"; ctx.beginPath(); ctx.arc(cx, cy, 500, 0, Math.PI * 2); ctx.fill();
+    ctx.lineWidth = 1;
+    for (let radius = 170; radius < 490; radius += 2.5) {
+        ctx.beginPath(); ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+        ctx.strokeStyle = `rgba(255,255,255,${Math.random() * 0.05})`; ctx.stroke();
     }
+
+    if (ctx.createConicGradient) {
+        const gradient = ctx.createConicGradient(Math.PI / 4, cx, cy);
+        gradient.addColorStop(0, "rgba(255,255,255,0)"); gradient.addColorStop(0.1, "rgba(255,255,255,0.1)");
+        gradient.addColorStop(0.2, "rgba(255,255,255,0)"); gradient.addColorStop(0.5, "rgba(255,255,255,0)");
+        gradient.addColorStop(0.6, "rgba(255,255,255,0.1)"); gradient.addColorStop(0.7, "rgba(255,255,255,0)");
+        gradient.addColorStop(1, "rgba(255,255,255,0)");
+        ctx.fillStyle = gradient; ctx.beginPath(); ctx.arc(cx, cy, 500, 0, Math.PI * 2); ctx.fill();
+    }
+
+    ctx.fillStyle = "#c4281c"; ctx.beginPath(); ctx.arc(cx, cy, 160, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = "#e8b923"; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(cx, cy, 150, 0, Math.PI * 2); ctx.stroke();
+    ctx.fillStyle = "#e8b923"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.font = 'bold 36px "Playfair Display", serif';
+    ctx.fillText("SYMPHONY", cx, cy - 40);
+    ctx.fillStyle = "#ffffff"; ctx.font = 'bold 16px "Inter", sans-serif'; ctx.fillText("STEREO", cx, cy + 40);
+    ctx.fillStyle = "#050505"; ctx.beginPath(); ctx.arc(cx, cy, 12, 0, Math.PI * 2); ctx.fill();
+
+    // Lưu vào cache
+    cachedVinylBase64 = canvas.toDataURL("image/png");
+    return cachedVinylBase64;
+}
 
     if (vinylBg) vinylBg.src = generateVinylImage();
 
@@ -411,6 +414,11 @@ document.addEventListener("DOMContentLoaded", () => {
                 window.switchView("catalog", "product", animateProductIntro);
             }
         });
+        // THÊM VÀO CUỐI HÀM renderCatalog()
+document.querySelectorAll('.content-expanded').forEach(el => { 
+    // Chỉ gắn 1 lần duy nhất khi render xong catalog
+    el.addEventListener("scroll", updateGlobalReturnStyle, { passive: true }); 
+});
     }
 
     function generateCardsHTML(category, catIdx, globalOffset) {
@@ -438,15 +446,15 @@ document.addEventListener("DOMContentLoaded", () => {
             if (itemData.type === "artist") {
                 cardImageHTML = `
                     <div class="w-full aspect-[2/3] overflow-hidden relative shadow-[0_20px_50px_rgba(0,0,0,0.8)] border border-white/10 bg-[#0a0a0a] z-10 group/card">
-                        <img src="${itemImg}" loading="lazy" class="w-full h-full object-cover filter grayscale-[100%] brightness-[0.6] group-hover/card:grayscale-0 group-hover/card:brightness-100 group-hover/card:scale-[1.05] transition-all duration-[700ms] ease-out">
-                        <div class="absolute inset-0 bg-black/20 group-hover/card:bg-transparent transition-colors duration-500 pointer-events-none"></div>
+                        <img src="${itemImg}" loading="lazy" class="w-full h-full object-cover filter grayscale-[100%] brightness-[0.6] group-hover/card:grayscale-0 group-hover/card:brightness-100 group-hover/card:scale-[1.05] transition-all duration-300 ease-out">
+                        <div class="absolute inset-0 bg-black/20 group-hover/card:bg-transparent transition-colors duration-300 pointer-events-none"></div>
                     </div>`;
             } else {
                 const albumImg = itemData.albums[0]?.img || coverImages[0];
                 cardImageHTML = `
                     <div class="w-full aspect-square relative border border-white/10 bg-black shadow-[0_20px_50px_rgba(0,0,0,0.8)] z-10 mt-6 md:mt-10 group/card">
                         <div class="absolute inset-0 z-10 overflow-hidden bg-[#111]">
-                            <img src="${albumImg}" class="w-full h-full object-cover filter grayscale-[100%] brightness-[0.6] group-hover/card:grayscale-0 group-hover/card:brightness-100 group-hover/card:scale-110 transition-all duration-[700ms] ease-out">
+                            <img src="${albumImg}" class="w-full h-full object-cover filter grayscale-[100%] brightness-[0.6] group-hover/card:grayscale-0 group-hover/card:brightness-100 group-hover/card:scale-110 transition-all duration-300 ease-out">
                         </div>
                     </div>`;
             }
@@ -559,9 +567,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 fromView.classList.add("hidden-view");
                 gsap.set(fromView, { clearProps: "transform" }); gsap.set(toView, { clearProps: "transform" });
                 requestAnimationFrame(() => window.refreshScrollRows());
-                if (toKey === "catalog") {
-                    document.querySelectorAll('.content-expanded').forEach(el => { el.addEventListener("scroll", updateGlobalReturnStyle); });
-                }
                 window.checkMiniPlayerVisibility(); 
             }
         });
@@ -844,24 +849,9 @@ document.addEventListener("DOMContentLoaded", () => {
     function updateVideoBackground(track) {
         if (!bgVideo1 || !bgVideo2) return;
         
-        let newVideoSrc = track.videoSrc;
-
-        if (!newVideoSrc) {
-            // Đã cập nhật chính xác tên file theo ảnh bạn chụp!
-            const minVideos = [
-                "./singer/MIN/sound/fragile-intro.mp4",               // Track 01
-                "./singer/MIN/sound/qua-muon.mp4",                    // Track 02
-                "./singer/MIN/sound/loser-chillies.mp4",              // Track 03
-                "./singer/MIN/sound/phai-viet-bao-nhieu-ban-tinh-ca.mp4", // Track 04
-                "./singer/MIN/sound/che-do-im-lang.mp4",               // Track 05
-                "./singer/MIN/sound/dieu-em-kho-noi.mp4",              // Track 06
-                "./singer/MIN/sound/ilysmbihtlyg-interlude.mp4", // Track 07
-                "./singer/MIN/sound/chang-phai-tinh-dau-sao-dau-den-the.mp4",// Track 08
-                "./singer/MIN/sound/boyfriend-girlfriend.mp4", // Track 09
-                "./singer/MIN/sound/co-em-la-nha.mp4"              // Track 10
-            ];
-            newVideoSrc = minVideos[window.globalCurrentTrackIndex] || "./singer/MIN/sound/qua-muon.mp4";
-        }
+        // Nếu track có videoSrc thì dùng, không thì dùng một video trừu tượng mặc định
+        // Bạn có thể đổi đường dẫn "./assets/default-visualizer.mp4" thành 1 file có sẵn của bạn
+        let newVideoSrc = track.videoSrc || "./assets/default-visualizer.mp4"; 
         
         const oldVid = activeVideoLayer === 1 ? bgVideo1 : bgVideo2;
         activeVideoLayer = activeVideoLayer === 1 ? 2 : 1;
@@ -885,7 +875,14 @@ document.addEventListener("DOMContentLoaded", () => {
                     }});
                 }
             }).catch(e => {
-                console.log("Lỗi tải nhạc (sai tên file):", e);
+                console.log("Video không tồn tại hoặc lỗi tải, chuyển về hiển thị Album Art mờ:", e);
+                // XỬ LÝ LỖI: Ẩn video bị lỗi đi, UI sẽ tự động hiện ảnh bgImage (Album Art) làm mờ cực kỳ đẹp
+                gsap.to(newVid, { opacity: 0, duration: 0.5 });
+                if(!oldVid.paused) {
+                    gsap.to(oldVid, { opacity: 0, duration: 1, onComplete: () => {
+                        oldVid.pause();
+                    }});
+                }
             });
         }
     }
@@ -1008,21 +1005,30 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     window.updatePlayerUI = () => {
+        const miniRecord = document.getElementById("mini-player-body");
+if (miniRecord) miniRecord.style.animationPlayState = window.isGlobalPlaying ? "running" : "paused";
         // Hàm xử lý hiệu ứng Pop-in cho Icon
         const updateIconState = (el, isPlaying, isPopTrack = false) => {
             if (!el) return;
             const wasPlaying = el.classList.contains("ph-pause");
+            
             if (isPlaying && !wasPlaying) {
+                // ĐANG PHÁT -> Hiện icon PAUSE (Ép về tâm tuyệt đối, không margin)
                 el.classList.replace("ph-play", "ph-pause"); 
-                el.classList.remove("ml-1", "ml-0.5");
+                el.style.marginLeft = "0px"; 
+                el.style.transform = ""; // Xóa sạch transform cũ (nếu có)
+                
                 el.classList.remove("animate-pop"); void el.offsetWidth; el.classList.add("animate-pop");
             } else if (!isPlaying && wasPlaying) {
+                // ĐANG DỪNG -> Hiện icon PLAY (Thêm tí margin-left để bù tâm thị giác)
                 el.classList.replace("ph-pause", "ph-play"); 
-                if (isPopTrack) el.classList.add("ml-0.5"); else el.classList.add("ml-1");
+                // Nút nhỏ trong list thì bù 1px, nút to tròn thì bù 2px
+                el.style.marginLeft = isPopTrack ? "1px" : "2px"; 
+                el.style.transform = ""; 
+                
                 el.classList.remove("animate-pop"); void el.offsetWidth; el.classList.add("animate-pop");
             }
         };
-
         // 1. Đồng bộ Nút chính & Mini Player
         updateIconState(mainPlayIcon, window.isGlobalPlaying);
         updateIconState(miniPlayIcon, window.isGlobalPlaying);
@@ -1033,18 +1039,20 @@ document.addEventListener("DOMContentLoaded", () => {
 
         // 3. Đồng bộ Danh sách Album & Track phổ biến
         if (currentArtistData && currentArtistData.albums) {
-            currentArtistData.albums.forEach((album, aIdx) => {
-                const albIcon = document.getElementById(`album-play-${aIdx}`);
-                if (albIcon) updateIconState(albIcon, window.isGlobalPlaying && currentAlbumIndex === aIdx);
+            // FIX DOM: Chỉ quét DOM của Album HIỆN TẠI đang mở, bỏ qua các Album khác để tiết kiệm CPU
+            const activeAlbum = currentArtistData.albums[currentAlbumIndex];
+            
+            const albIcon = document.getElementById(`album-play-${currentAlbumIndex}`);
+            if (albIcon) updateIconState(albIcon, window.isGlobalPlaying);
 
-                album.tracks.forEach((track, tIdx) => {
-                    const popIcon = document.getElementById(`popular-play-${aIdx}-${tIdx}`);
-                    const popNum = document.getElementById(`popular-num-${aIdx}-${tIdx}`);
+            if (activeAlbum && activeAlbum.tracks) {
+                activeAlbum.tracks.forEach((track, tIdx) => {
+                    const popIcon = document.getElementById(`popular-play-${currentAlbumIndex}-${tIdx}`);
+                    const popNum = document.getElementById(`popular-num-${currentAlbumIndex}-${tIdx}`);
                     if (popIcon) {
-                        const isPlayingThisTrack = (window.isGlobalPlaying && currentAlbumIndex === aIdx && window.globalCurrentTrackIndex === tIdx);
+                        const isPlayingThisTrack = (window.isGlobalPlaying && window.globalCurrentTrackIndex === tIdx);
                         updateIconState(popIcon, isPlayingThisTrack, true);
                         
-                        // Ép hiển thị icon Pause cố định khi bài hát đang phát
                         if (isPlayingThisTrack) {
                             if (popNum) popNum.style.opacity = "0";
                             popIcon.style.opacity = "1";
@@ -1054,21 +1062,10 @@ document.addEventListener("DOMContentLoaded", () => {
                         }
                     }
                 });
-            });
+            }
         }
 
         // 4. Xử lý Đĩa than xoay & Tiến trình
-        if (window.isGlobalPlaying && window.hasTrackSelection) {
-            detailVinyl?.classList.add("is-playing");
-            startSmoothProgress();
-        } else {
-            detailVinyl?.classList.remove("is-playing");
-            cancelAnimationFrame(animationFrameId);
-        }
-        window.renderTracks();
-        checkMiniPlayerVisibility(); 
-
-        // ... (code cũ của hàm updatePlayerUI)
         if (window.isGlobalPlaying && window.hasTrackSelection) {
             detailVinyl?.classList.add("is-playing");
             startSmoothProgress();
@@ -1095,17 +1092,31 @@ document.addEventListener("DOMContentLoaded", () => {
     };
 
     window.togglePlay = () => {
-        if (!currentArtistData?.albums?.length || !bgVideo1) return;
-        if (!window.hasTrackSelection) { window.playTrack(0); return; }
-        
-        const player = getMainPlayer();
-        if (player.paused) {
-            player.play(); window.isGlobalPlaying = true;
-        } else {
-            player.pause(); window.isGlobalPlaying = false;
+    if (!currentArtistData?.albums?.length || !bgVideo1) return;
+    if (!window.hasTrackSelection) { window.playTrack(0); return; }
+    
+    const player = getMainPlayer();
+    if (!player) return; // Tránh lỗi null
+
+    if (player.paused) {
+        // FIX LỖI DOM EXCEPTION bằng cách handle Promise
+        const playPromise = player.play();
+        if (playPromise !== undefined) {
+            playPromise.then(() => {
+                window.isGlobalPlaying = true;
+                window.updatePlayerUI();
+            }).catch(error => {
+                console.warn("Trình duyệt chặn autoplay hoặc video chưa sẵn sàng:", error);
+                window.isGlobalPlaying = false;
+                window.updatePlayerUI();
+            });
         }
+    } else {
+        player.pause(); 
+        window.isGlobalPlaying = false;
         window.updatePlayerUI();
-    };
+    }
+};
 
     window.toggleGlobalPlay = () => {
         if (!currentArtistData?.albums?.length) return;
@@ -1114,34 +1125,39 @@ document.addEventListener("DOMContentLoaded", () => {
     };
 
     window.toggleTrackFromArtist = (aIdx, tIdx) => {
-        if (window.hasTrackSelection && window.currentAlbumIndex === aIdx && window.globalCurrentTrackIndex === tIdx) {
+        // Đã bỏ window. trước currentAlbumIndex
+        if (window.hasTrackSelection && currentAlbumIndex === aIdx && window.globalCurrentTrackIndex === tIdx) {
             window.togglePlay();
         } else { window.playTrackSilently(aIdx, tIdx); }
     };
 
     window.toggleAlbumFromArtist = (aIdx) => {
-        if (window.hasTrackSelection && window.currentAlbumIndex === aIdx) {
+        // Đã bỏ window. trước currentAlbumIndex
+        if (window.hasTrackSelection && currentAlbumIndex === aIdx) {
             window.togglePlay();
         } else { window.playAlbumSilently(aIdx); }
     };
 
     window.seekTrack = (event) => {
-        if (!currentArtistData?.albums?.length || !window.hasTrackSelection) return;
+    if (!currentArtistData?.albums?.length || !window.hasTrackSelection) return;
 
-        const player = getMainPlayer();
-        const container = document.getElementById("progress-container");
-        const rect = container.getBoundingClientRect();
-        const clickX = event.clientX - rect.left;
-        const percent = Math.max(0, Math.min(clickX / rect.width, 1));
-        
+    const player = getMainPlayer();
+    if (!player) return; // Tránh lỗi null
+
+    const container = document.getElementById("progress-container");
+    const rect = container.getBoundingClientRect();
+    const clickX = event.clientX - rect.left;
+    const percent = Math.max(0, Math.min(clickX / rect.width, 1));
+    
+    // BẮT BUỘC FIX: Phải check duration đã có chưa (tránh NaN)
+    if (player.duration && isFinite(player.duration)) {
         const targetTime = percent * player.duration;
-        if (isFinite(targetTime)) {
-            player.currentTime = targetTime;
-            window.currentProgress = percent * 100;
-            progressBar.style.width = `${window.currentProgress}%`;
-            currentTimeEl.innerText = formatRealTime(targetTime);
-        }
-    };
+        player.currentTime = targetTime;
+        window.currentProgress = percent * 100;
+        if(progressBar) progressBar.style.width = `${window.currentProgress}%`;
+        if(currentTimeEl) currentTimeEl.innerText = formatRealTime(targetTime);
+    }
+};
 
     window.toggleMute = () => {
         window.isMuted = !window.isMuted;
@@ -1152,42 +1168,14 @@ document.addEventListener("DOMContentLoaded", () => {
         if (document.getElementById("volume-bar")) document.getElementById("volume-bar").style.width = `${percent * 100}%`;
         if (document.getElementById("mini-volume-bar")) document.getElementById("mini-volume-bar").style.width = `${percent * 100}%`;
         const volPercentText = document.getElementById("volume-percent");
+        const miniVolPercentText = document.getElementById("mini-volume-percent");
         if (volPercentText) volPercentText.innerText = `${Math.round(percent * 100)}%`;
+        if (miniVolPercentText) miniVolPercentText.innerText = `${Math.round(percent * 100)}%`;
 
         const iconClass = percent === 0 ? "ph-fill ph-speaker-slash text-lg" : "ph-fill ph-speaker-high text-lg";
         const miniIconClass = percent === 0 ? "ph-fill ph-speaker-slash text-white/40 hover:text-white transition-colors text-sm" : "ph-fill ph-speaker-high text-white/40 hover:text-white transition-colors text-sm";
         if (document.getElementById("volume-icon")) document.getElementById("volume-icon").className = iconClass;
         if (document.getElementById("mini-volume-icon")) document.getElementById("mini-volume-icon").className = miniIconClass;
-    };
-    window.seekVolume = (event) => {
-        const container = document.getElementById("volume-container");
-        const rect = container.getBoundingClientRect();
-        let percent = Math.max(0, Math.min((event.clientX - rect.left) / rect.width, 1));
-        
-        window.globalVolume = percent;
-        window.isMuted = percent === 0;
-
-        const player = getMainPlayer();
-        if (player) player.volume = window.globalVolume;
-
-        document.getElementById("volume-bar").style.width = `${window.globalVolume * 100}%`;
-        const volIcon = document.getElementById("volume-icon");
-        
-        if (window.isMuted) volIcon.classList.replace("ph-speaker-high", "ph-speaker-none");
-        else volIcon.classList.replace("ph-speaker-none", "ph-speaker-high");
-    };
-
-    window.switchTab = (tab) => {
-        const trackTab = document.getElementById("tab-tracks"); const lyricTab = document.getElementById("tab-lyrics");
-        if (tab === "tracks") {
-            trackTab.classList.add("text-white"); trackTab.classList.remove("text-white/40");
-            lyricTab.classList.add("text-white/40"); lyricTab.classList.remove("text-white");
-            lyricsContainer.classList.add("opacity-0", "pointer-events-none"); tracklistContainer.classList.remove("opacity-0", "pointer-events-none");
-            return;
-        }
-        lyricTab.classList.add("text-white"); lyricTab.classList.remove("text-white/40");
-        trackTab.classList.add("text-white/40"); trackTab.classList.remove("text-white");
-        tracklistContainer.classList.add("opacity-0", "pointer-events-none"); lyricsContainer.classList.remove("opacity-0", "pointer-events-none");
     };
 
     btnExplore?.addEventListener("click", () => { window.switchView("home", "catalog", animateCatalogIntro); });
